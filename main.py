@@ -8,9 +8,9 @@ import torch.nn.functional as F
 from random import shuffle
 from math import sqrt
 
-acceptable_float_error = 1
+acceptable_float_error = 3
 learning_rate = 0.01
-epochs = 10
+epochs = 2
 n_samples = 10
 batch_size = 1
 
@@ -29,7 +29,7 @@ class Net4(nn.Module):
 		x = F.relu(self.fc2(x))
 		x = F.relu(self.fc3(x))
 		x = self.fc4(x)
-		return F.log_softmax(x)
+		return x
 
 # generate a linear dataset with two centers (using sklearn's make_blobs)
 # making a linear function to separate the two cluster of points possible
@@ -59,8 +59,7 @@ def train(net, optimizer, criterion, train_loader, epoch, log_interval=1):
 		loss = criterion(output, target)
 		loss.backward()
 		optimizer.step()
-
-		correct += torch.le(torch.abs(output - target), acceptable_float_error).sum().item()
+		correct += torch.le(torch.abs(loss.sqrt()), acceptable_float_error).sum().item()
 
 		train_loss += loss.item()
 		# log the training details on every log_interval (default=10)
@@ -68,22 +67,32 @@ def train(net, optimizer, criterion, train_loader, epoch, log_interval=1):
 			print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
 			epoch, batch_idx, len(train_loader.dataset),
 			100. * batch_idx / len(train_loader), loss.item()))
+	
+	train_loss /= len(train_loader.dataset)
+	train_accuracy   = correct/len(train_loader.dataset) 
 
-	print('Training loss: {:.6f} Accuracy: {}/{}\n'.format(train_loss/len(train_loader.dataset), correct, len(train_loader.dataset) ))
-
-def test(net, criterion, test_loader):
+	print('\nTraining set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(train_loss, correct, 
+		len(train_loader.dataset), 100. * correct / len(train_loader.dataset)))
+def test(net, criterion, test_loader, epoch):
 	net.eval()
 	correct = 0
 	test_loss = 0.0
+	log_interval = 1
 
 	with torch.no_grad():
-		for data in test_loader:
+		for batch_idx, data in enumerate(test_loader):
 			inputs, label = data
 			predicted = net(inputs)
-			test_loss += criterion(predicted, label).item() # sum up batch loss
+			loss = criterion(predicted, label)
+			test_loss +=  loss.item()# sum up batch loss
 
-			correct += torch.le(torch.abs(predicted - label) , acceptable_float_error).sum().item()
-	
+			correct += torch.le(torch.abs(loss.sqrt()) , acceptable_float_error).sum().item()
+			# log the training details on every log_interval (default=10)
+			if batch_idx % log_interval == 0:
+				print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+				epoch, batch_idx, len(test_loader.dataset),
+				100. * batch_idx / len(test_loader), loss.item()))
+
 	test_loss /= len(test_loader.dataset)
 	test_accuracy   = correct/len(test_loader.dataset) 
 	print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(test_loss, correct, 
@@ -104,13 +113,13 @@ def main():
 	test_loader  = dataset_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 	net = Net4()
-	print(len(train_dataset), len(test_dataset))
-	optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+
+	optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.5)
 	criterion = nn.MSELoss()
 
 	for epoch in range(1, epochs + 1):
 		train(net, optimizer, criterion, train_loader, epoch)
-		test(net, criterion, test_loader)
+		test(net, criterion, test_loader, epoch)
 
 if __name__ == '__main__':
     main()
