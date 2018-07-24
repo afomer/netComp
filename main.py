@@ -11,7 +11,7 @@ from math import sqrt
 acceptable_float_error = 0.49
 learning_rate = 0.01
 epochs = 10
-n_samples = 100
+n_samples = 10
 batch_size = 1
 
 class Net4(nn.Module):
@@ -29,7 +29,7 @@ class Net4(nn.Module):
 		x = F.relu(self.fc2(x))
 		x = F.relu(self.fc3(x))
 		x = self.fc4(x)
-		return x
+		return F.log_softmax(x)
 
 # generate a linear dataset with two centers (using sklearn's make_blobs)
 # making a linear function to separate the two cluster of points possible
@@ -63,11 +63,11 @@ def train(net, optimizer, criterion, train_loader, epoch, log_interval=1):
 		correct += torch.le(torch.abs(output - target), acceptable_float_error).sum().item()
 
 		train_loss += loss.item()
-		
+		print(data)
 		# log the training details on every log_interval (default=10)
 		if batch_idx % log_interval == 0:
 			print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-			epoch, batch_idx * len(data), len(train_loader.dataset),
+			epoch, batch_idx, len(train_loader.dataset),
 			100. * batch_idx / len(train_loader), loss.item()))
 
 	print('Training loss: {:.6f} Accuracy: {}/{}\n'.format(train_loss/len(train_loader.dataset), correct, len(train_loader.dataset) ))
