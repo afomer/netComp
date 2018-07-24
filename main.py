@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from random import shuffle
 from math import sqrt
 
-acceptable_float_error = 0.49
+acceptable_float_error = 1
 learning_rate = 0.01
 epochs = 10
 n_samples = 10
@@ -63,7 +63,6 @@ def train(net, optimizer, criterion, train_loader, epoch, log_interval=1):
 		correct += torch.le(torch.abs(output - target), acceptable_float_error).sum().item()
 
 		train_loss += loss.item()
-		print(data)
 		# log the training details on every log_interval (default=10)
 		if batch_idx % log_interval == 0:
 			print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
