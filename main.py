@@ -142,7 +142,8 @@ class Net0(nn.Module):
 # generate a linear dataset with two centers (using sklearn's make_blobs)
 # making a linear function to separate the two cluster of points possible
 def generate_linear_dataset(n_samples=10, centers=2):
-	X_Y_values, label_values = make_blobs(n_samples=n_samples, centers=centers, n_features=2)
+	X_Y_values, label_values = make_blobs(n_samples=n_samples, centers=centers, n_features=2,
+		cluster_std=1.2, shuffle=True)
 	
 	X = torch.from_numpy(X_Y_values[:, 0])
 	Y = torch.from_numpy(X_Y_values[:, 1])
