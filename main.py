@@ -6,17 +6,20 @@ import torch.optim as optim
 import torch.utils.data
 import torch.nn.functional as F
 from random import shuffle
-from math import sqrt
+from utils import plot_boundry, generate_linear_dataset
 
-acceptable_float_error = 3
 learning_rate = 0.01
-epochs = 20
+epochs = 10
 n_samples = 1000
 batch_size = 1
+
+SHOW_TRAIN_LOGS = False
+SHOW_TEST_LOGS  = False
 
 class Net4(nn.Module):
 	def __init__(self):
 		super(Net4, self).__init__()
+		self.id  = 4
 		self.fc1 = nn.Linear(2, 30)
 		self.fc2 = nn.Linear(30, 30)
 		self.fc3 = nn.Linear(30, 2)
@@ -30,6 +33,7 @@ class Net4(nn.Module):
 class Net3(nn.Module):
 	def __init__(self):
 		super(Net3, self).__init__()
+		self.id  = 3
 		self.fc1 = nn.Linear(2, 20)
 		self.fc2 = nn.Linear(20, 20)
 		self.fc3 = nn.Linear(20, 20)
@@ -45,6 +49,7 @@ class Net3(nn.Module):
 class Net2(nn.Module):
 	def __init__(self):
 		super(Net2, self).__init__()
+		self.id  = 2
 		self.fc1 = nn.Linear(2, 15)
 		self.fc2 = nn.Linear(15, 15)
 		self.fc3 = nn.Linear(15, 15)
@@ -64,6 +69,7 @@ class Net2(nn.Module):
 class Net1(nn.Module):
 	def __init__(self):
 		super(Net1, self).__init__()
+		self.id  = 1
 		self.fc1 = nn.Linear(2, 10)
 		self.fc2 = nn.Linear(10, 10)
 		self.fc3 = nn.Linear(10, 10)
@@ -93,6 +99,7 @@ class Net1(nn.Module):
 class Net0(nn.Module):
 	def __init__(self):
 		super(Net0, self).__init__()
+		self.id  = 0
 		self.fc1 = nn.Linear(2, 7)
 		self.fc2 = nn.Linear(7, 7)
 		self.fc3 = nn.Linear(7, 7)
@@ -139,19 +146,6 @@ class Net0(nn.Module):
 		x = self.fc21(x)
 		return F.log_softmax(x, dim=1)
 
-# generate a linear dataset with two centers (using sklearn's make_blobs)
-# making a linear function to separate the two cluster of points possible
-def generate_linear_dataset(n_samples=10, centers=2):
-	X_Y_values, label_values = make_blobs(n_samples=n_samples, centers=centers, n_features=2,
-		cluster_std=1.2, shuffle=True)
-	
-	X = torch.from_numpy(X_Y_values[:, 0])
-	Y = torch.from_numpy(X_Y_values[:, 1])
-	XY = torch.Tensor([x for x in zip(X, Y)])
-	labels = torch.from_numpy(label_values)
-
-	return [ x for x in zip(XY, labels)]
-
 def train(net, optimizer, criterion, train_loader, epoch, log_interval=1):
 	net.train()
 
@@ -167,16 +161,19 @@ def train(net, optimizer, criterion, train_loader, epoch, log_interval=1):
 		correct += pred.eq(target.view_as(pred)).sum().item()
 		loss.backward()
 		optimizer.step()
-		if batch_idx % log_interval == 0:
+		if batch_idx % log_interval == 0 and SHOW_TRAIN_LOGS:
 			print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
 			epoch, batch_idx , len(train_loader.dataset),
 			100. * batch_idx / len(train_loader), loss.item()))
 	
 	train_loss /= len(train_loader.dataset)
-	train_accuracy   = correct/len(train_loader.dataset) 
+	train_accuracy   = 100. * correct / len(train_loader.dataset)
 
-	print('\nTraining set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(train_loss, correct, 
-		len(train_loader.dataset), 100. * correct / len(train_loader.dataset)))
+	if SHOW_TRAIN_LOGS:
+		print('\nTraining set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(train_loss, correct, 
+			len(train_loader.dataset), 100. * correct / len(train_loader.dataset)))
+
+	return train_accuracy
 
 def test(net, criterion, test_loader, epoch):
 	net.eval()
@@ -193,15 +190,19 @@ def test(net, criterion, test_loader, epoch):
 			correct += pred.eq(target.view_as(pred)).sum().item()
 
 			# log the training details on every log_interval (default=10)
-			if batch_idx % log_interval == 0:
+			if batch_idx % log_interval == 0 and SHOW_TEST_LOGS:
 				print('Test Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
 				epoch, batch_idx, len(test_loader.dataset),
 				100. * batch_idx / len(test_loader), loss.item()))
 
 	test_loss /= len(test_loader.dataset)
-	test_accuracy   = correct/len(test_loader.dataset) 
-	print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(test_loss, correct, 
-		len(test_loader.dataset), 100. * correct / len(test_loader.dataset)))
+	test_accuracy   = 100. * correct / len(test_loader.dataset)
+
+	if SHOW_TEST_LOGS:
+		print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(test_loss, correct, 
+			len(test_loader.dataset), 100. * correct / len(test_loader.dataset)))
+
+	return test_accuracy
 
 def main(net):
 	# generate the dataset, shuffle it
@@ -213,23 +214,29 @@ def main(net):
 	train_dataset = dataset_data[:train_test_divide]
 	test_dataset  = dataset_data[train_test_divide:]
 
-	train_loader = dataset_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-	test_loader  = dataset_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+	test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 	optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 	criterion = nn.CrossEntropyLoss()
+	
+	training_accuracy = 0
+	test_accuracy     = 0
 
 	for epoch in range(1, epochs + 1):
-		train(net, optimizer, criterion, train_loader, epoch)
-		test(net, criterion, test_loader, epoch)
+		training_accuracy = train(net, optimizer, criterion, train_loader, epoch)
+		test_accuracy     = test(net, criterion, test_loader, epoch)
+
+	print('Train Accuracy: {} \nTest Accuracy: {}'.format(training_accuracy, test_accuracy))
+	plot_boundry(net)
 
 if __name__ == '__main__':
 
 	# run all 5 models
 	models_num = 5
-	models = [Net0(), Net1(), Net2(), Net3(), Net4(), Net4()]
-	for model_idx in range(5):
-		print('___Net{}___\n'.format(model_idx))
+	models = [Net0(), Net1(), Net2(), Net3(), Net4()]
+	for model_idx in range(len(models)):
+		print('\n___Net{}___\n'.format(model_idx))
 		main(models[model_idx])
 		print('\n___________')
 
