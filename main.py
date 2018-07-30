@@ -7,6 +7,7 @@ import torch.utils.data
 import torch.nn.functional as F
 from random import shuffle
 from utils import plot_boundry, generate_linear_dataset
+from numpy.random import uniform
 
 learning_rate = 0.01
 epochs = 10
@@ -204,7 +205,39 @@ def test(net, criterion, test_loader, epoch):
 
 	return test_accuracy
 
-def main(net):
+# generate a linear dataset with two centers (using sklearn's make_blobs)
+# making a linear function to separate the two cluster of points possible
+def generate_sample_linear_dataset(n_samples=10, centers=2, N=1000, low=-2, high=2):
+
+	# create N samples, uniformly distributed between low and high
+	x_samples    = uniform(low=low, high=high, size=(N,))
+	y_samples    = uniform(low=low, high=high, size=(N,))
+	
+	x_tensors = torch.from_numpy(x_samples).float()
+	y_tensors = torch.from_numpy(y_samples).float()
+
+	samples = torch.Tensor([ x for x in zip(x_tensors, y_tensors) ])
+
+	sample_loader = torch.utils.data.DataLoader(samples)
+
+	return sample_loader
+
+def main(net, train_loader, test_loader, sample_loader):
+	optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+	criterion = nn.CrossEntropyLoss()
+	
+	training_accuracy = 0
+	test_accuracy     = 0
+
+	for epoch in range(1, epochs + 1):
+		training_accuracy = train(net, optimizer, criterion, train_loader, epoch)
+		test_accuracy     = test(net, criterion, test_loader, epoch)
+
+	print('Train Accuracy: {} \nTest Accuracy: {}'.format(training_accuracy, test_accuracy))
+	plot_boundry(net, sample_loader=sample_loader)
+
+if __name__ == '__main__':
+	
 	# generate the dataset, shuffle it
 	dataset_data = generate_linear_dataset(n_samples=n_samples)
 	shuffle(dataset_data)
@@ -217,26 +250,11 @@ def main(net):
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 	test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-	optimizer = optim.Adam(net.parameters(), lr=learning_rate)
-	criterion = nn.CrossEntropyLoss()
-	
-	training_accuracy = 0
-	test_accuracy     = 0
-
-	for epoch in range(1, epochs + 1):
-		training_accuracy = train(net, optimizer, criterion, train_loader, epoch)
-		test_accuracy     = test(net, criterion, test_loader, epoch)
-
-	print('Train Accuracy: {} \nTest Accuracy: {}'.format(training_accuracy, test_accuracy))
-	plot_boundry(net)
-
-if __name__ == '__main__':
-
 	# run all 5 models
 	models_num = 5
 	models = [Net0(), Net1(), Net2(), Net3(), Net4()]
 	for model_idx in range(len(models)):
 		print('\n___Net{}___\n'.format(model_idx))
-		main(models[model_idx])
+		main(models[model_idx], train_loader, test_loader, generate_sample_linear_dataset())
 		print('\n___________')
 

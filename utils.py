@@ -35,18 +35,19 @@ def generate_linear_dataset(n_samples=10, centers=2):
 
 # Generate a plot of the decision boundry by creating 1000 samples, running the NN
 # on them, then color samples them based on NN's classification
-def plot_boundry(NN, N=1000, low=-2, high=2):
+def plot_boundry(NN, N=1000, low=-2, high=2, sample_loader=None):
 
-	# create N samples, uniformly distributed between low and high
-	x_samples    = uniform(low=low, high=high, size=(N,))
-	y_samples    = uniform(low=low, high=high, size=(N,))
-	
-	x_tensors = torch.from_numpy(x_samples).float()
-	y_tensors = torch.from_numpy(y_samples).float()
+	if sample_loader is not None:
+		# create N samples, uniformly distributed between low and high
+		x_samples    = uniform(low=low, high=high, size=(N,))
+		y_samples    = uniform(low=low, high=high, size=(N,))
+		
+		x_tensors = torch.from_numpy(x_samples).float()
+		y_tensors = torch.from_numpy(y_samples).float()
 
-	samples = torch.Tensor([ x for x in zip(x_tensors, y_tensors) ])
+		samples = torch.Tensor([ x for x in zip(x_tensors, y_tensors) ])
 
-	sample_loader = torch.utils.data.DataLoader(samples)
+		sample_loader = torch.utils.data.DataLoader(samples)
 
 	# feed it to the neural net
 	labels = []
