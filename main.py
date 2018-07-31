@@ -6,7 +6,8 @@ import torch.optim as optim
 import torch.utils.data
 import torch.nn.functional as F
 from random import shuffle
-from utils import plot_boundry, generate_linear_dataset
+from utils import plot_boundry, generate_linear_dataset, \
+generate_sample_linear_dataset, generate_uniform_linear_dataset
 from numpy.random import uniform
 
 learning_rate = 0.01
@@ -205,23 +206,6 @@ def test(net, criterion, test_loader, epoch):
 
 	return test_accuracy
 
-# generate a linear dataset with two centers (using sklearn's make_blobs)
-# making a linear function to separate the two cluster of points possible
-def generate_sample_linear_dataset(n_samples=10, centers=2, N=1000, low=-2, high=2):
-
-	# create N samples, uniformly distributed between low and high
-	x_samples    = uniform(low=low, high=high, size=(N,))
-	y_samples    = uniform(low=low, high=high, size=(N,))
-	
-	x_tensors = torch.from_numpy(x_samples).float()
-	y_tensors = torch.from_numpy(y_samples).float()
-
-	samples = torch.Tensor([ x for x in zip(x_tensors, y_tensors) ])
-
-	sample_loader = torch.utils.data.DataLoader(samples)
-
-	return sample_loader
-
 def main(net, train_loader, test_loader, sample_loader):
 	optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 	criterion = nn.CrossEntropyLoss()
@@ -239,8 +223,8 @@ def main(net, train_loader, test_loader, sample_loader):
 if __name__ == '__main__':
 	
 	# generate the dataset, shuffle it
-	dataset_data = generate_linear_dataset(n_samples=n_samples)
-	shuffle(dataset_data)
+	dataset_data = generate_uniform_linear_dataset(n_samples=n_samples, plot_db=True)
+
 	train_test_divide = int(len(dataset_data) * .8)
 
 	# partition into train and test sets
