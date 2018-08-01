@@ -45,38 +45,47 @@ def generate_uniform_linear_dataset(n_samples=10, low=-1.0, high=1.1, plot_db=Fa
 	x_samples    = uniform(low=low, high=high, size=(n_samples,))
 	y_samples    = uniform(low=low, high=high, size=(n_samples,))
 	points = np.array([list(x) for x in zip(x_samples, y_samples)])
-	
-	# create kmeans object
-	kmeans = KMeans(n_clusters=2)
 
-	# fit kmeans object to data
-	kmeans.fit(points)
-
-	# cluster the points
-	points_clusters = kmeans.fit_predict(points)
-
-	cluster1_x_axis = torch.from_numpy(points[points_clusters == 0,0])
-	cluster1_y_axis = torch.from_numpy(points[points_clusters == 0,1])
-
-	cluster2_x_axis = torch.from_numpy(points[points_clusters == 1,0])
-	cluster2_y_axis = torch.from_numpy(points[points_clusters == 1,1])
-
-	cluster1_points  = torch.Tensor([x for x in zip(cluster1_x_axis, cluster1_y_axis)])
-	cluster2_points  = torch.Tensor([x for x in zip(cluster2_x_axis, cluster2_y_axis)])
+	#linear function y=mx + b
+	m = .3
+	b = 0
+	f = lambda x: x * m + b
 	
 	# The labels for the clusters (positive integers)
-	# cluster 1 is 0
-	# cluster 2 is 1
-	cluster1_points_labeled  = [x for x in map( lambda x:(x, 0), cluster1_points)]
-	cluster2_points_labeled  = [x for x in map( lambda x:(x, 1), cluster2_points)]
+	cluster1_label = 0
+	cluster2_label = 1
+
+	cluster1_labeled_points = []
+	cluster2_labeled_points = []
 	
-	# Merge the 2 cluster points and shuffle them
-	resulting_labeled_points = cluster1_points_labeled + cluster2_points_labeled
+	cluster1_x = []
+	cluster1_y = []
+	
+	cluster2_x = []
+	cluster2_y = []
+
+	for point in points:
+		x, y = point
+		diff = y - f(x)
+
+		if diff > 0:
+			point_tensor_cluster1 = (torch.from_numpy(point).float(), cluster1_label)
+			cluster1_labeled_points.append(point_tensor_cluster1)
+			cluster1_x.append(x)
+			cluster1_y.append(y)
+		else:
+			point_tensor_cluster2 = (torch.from_numpy(point).float(), cluster2_label)
+			cluster2_labeled_points.append(point_tensor_cluster2)
+			cluster2_x.append(x)
+			cluster2_y.append(y)
+
+	resulting_labeled_points = cluster1_labeled_points + cluster2_labeled_points
+
 	shuffle(resulting_labeled_points)
 	
 	if plot_db:
-		plt.scatter(cluster1_x_axis, cluster1_y_axis, c='red')
-		plt.scatter(cluster2_x_axis, cluster2_y_axis, c='blue')
+		plt.scatter(cluster1_x, cluster1_y, c='blue')
+		plt.scatter(cluster2_x, cluster2_y, c='red')
 		plt.title('Uniform Linear Dataset')
 		plt.show()
 
