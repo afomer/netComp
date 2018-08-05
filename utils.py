@@ -13,6 +13,7 @@ import numpy as np
 class Net4(nn.Module):
 	def __init__(self):
 		super(Net4, self).__init__()
+		self.id  = 'Net4'
 		self.fc1 = nn.Linear(2, 30)
 		self.fc2 = nn.Linear(30, 30)
 		self.fc3 = nn.Linear(30, 2)
@@ -141,4 +142,12 @@ def plot_boundry(NN, N=1000, low=-2, high=2, sample_loader=None):
 
 	for key, group in grouped:
 	    group.plot(ax=ax, kind='scatter', x='x', y='y', label=key, color=colors[key])
+	plt.show()
+
+# Generate a plot of the loss
+def plot_loss(NN, loss_array1, loss_type_str_1, loss_array2, loss_type_str_2):
+	plt.plot(range(1, len(loss_array1) + 1), loss_array1, label=loss_type_str_1)
+	plt.plot(range(1, len(loss_array2) + 1), loss_array2, label=loss_type_str_2)
+	plt.legend()
+	plt.title('Net{} - Loss'.format(str(NN.id)))
 	plt.show()

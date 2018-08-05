@@ -7,13 +7,13 @@ import torch.utils.data
 import torch.nn.functional as F
 from random import shuffle
 from utils import plot_boundry, generate_linear_dataset, \
-generate_sample_linear_dataset, generate_uniform_linear_dataset
+generate_sample_linear_dataset, generate_uniform_linear_dataset, plot_loss
 from numpy.random import uniform
 
-learning_rate = 0.01
-epochs = 10
+learning_rate = 0.005
+epochs = 15
 n_samples = 1000
-batch_size = 1
+batch_size = 64
 
 SHOW_TRAIN_LOGS = False
 SHOW_TEST_LOGS  = False
@@ -125,26 +125,26 @@ class Net0(nn.Module):
 		self.fc21 = nn.Linear(7, 2)
 
 	def forward(self, x):
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = F.relu(self.fc3(x))
-		x = F.relu(self.fc4(x))
-		x = F.relu(self.fc5(x))
-		x = F.relu(self.fc6(x))
-		x = F.relu(self.fc7(x))
-		x = F.relu(self.fc8(x))
-		x = F.relu(self.fc9(x))
-		x = F.relu(self.fc10(x))
-		x = F.relu(self.fc11(x))
-		x = F.relu(self.fc12(x))
-		x = F.relu(self.fc13(x))
-		x = F.relu(self.fc14(x))
-		x = F.relu(self.fc15(x))
-		x = F.relu(self.fc16(x))
-		x = F.relu(self.fc17(x))
-		x = F.relu(self.fc18(x))
-		x = F.relu(self.fc19(x))
-		x = F.relu(self.fc20(x))
+		x = F.elu(self.fc1(x))
+		x = F.elu(self.fc2(x))
+		x = F.elu(self.fc3(x))
+		x = F.elu(self.fc4(x))
+		x = F.elu(self.fc5(x))
+		x = F.elu(self.fc6(x))
+		x = F.elu(self.fc7(x))
+		x = F.elu(self.fc8(x))
+		x = F.elu(self.fc9(x))
+		x = F.elu(self.fc10(x))
+		x = F.elu(self.fc11(x))
+		x = F.elu(self.fc12(x))
+		x = F.elu(self.fc13(x))
+		x = F.elu(self.fc14(x))
+		x = F.elu(self.fc15(x))
+		x = F.elu(self.fc16(x))
+		x = F.elu(self.fc17(x))
+		x = F.elu(self.fc18(x))
+		x = F.elu(self.fc19(x))
+		x = F.elu(self.fc20(x))
 		x = self.fc21(x)
 		return F.log_softmax(x, dim=1)
 
@@ -173,9 +173,9 @@ def train(net, optimizer, criterion, train_loader, epoch, log_interval=1):
 
 	if SHOW_TRAIN_LOGS:
 		print('\nTraining set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(train_loss, correct, 
-			len(train_loader.dataset), 100. * correct / len(train_loader.dataset)))
+			len(train_loader.dataset), train_accuracy))
 
-	return train_accuracy
+	return train_accuracy, train_loss
 
 def test(net, criterion, test_loader, epoch):
 	net.eval()
@@ -202,9 +202,9 @@ def test(net, criterion, test_loader, epoch):
 
 	if SHOW_TEST_LOGS:
 		print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(test_loss, correct, 
-			len(test_loader.dataset), 100. * correct / len(test_loader.dataset)))
+			len(test_loader.dataset), test_accuracy))
 
-	return test_accuracy
+	return test_accuracy, test_loss
 
 def main(net, train_loader, test_loader, sample_loader):
 	optimizer = optim.Adam(net.parameters(), lr=learning_rate)
@@ -213,17 +213,25 @@ def main(net, train_loader, test_loader, sample_loader):
 	training_accuracy = 0
 	test_accuracy     = 0
 
+	training_loss_array = []
+	test_loss_array		= []
+
 	for epoch in range(1, epochs + 1):
-		training_accuracy = train(net, optimizer, criterion, train_loader, epoch)
-		test_accuracy     = test(net, criterion, test_loader, epoch)
+		training_accuracy, training_loss = train(net, optimizer, criterion, train_loader, epoch)
+		test_accuracy, test_loss     = test(net, criterion, test_loader, epoch)
+		
+		training_loss_array.append( training_loss )
+		test_loss_array.append( test_loss )
 
 	print('Train Accuracy: {} \nTest Accuracy: {}'.format(training_accuracy, test_accuracy))
+	plot_loss(net, training_loss_array, 'training', test_loss_array, 'test')
 	plot_boundry(net, sample_loader=sample_loader)
+
 
 if __name__ == '__main__':
 	
 	# generate the dataset, shuffle it
-	dataset_data = generate_uniform_linear_dataset(n_samples=n_samples, plot_db=True)
+	dataset_data = generate_uniform_linear_dataset(n_samples=n_samples, plot_db=False)
 
 	train_test_divide = int(len(dataset_data) * .8)
 
@@ -237,6 +245,7 @@ if __name__ == '__main__':
 	# run all 5 models
 	models_num = 5
 	models = [Net0(), Net1(), Net2(), Net3(), Net4()]
+	
 	for model_idx in range(len(models)):
 		print('\n___Net{}___\n'.format(model_idx))
 		main(models[model_idx], train_loader, test_loader, generate_sample_linear_dataset())
