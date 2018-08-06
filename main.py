@@ -232,8 +232,8 @@ def main(net, train_loader, test_loader, sample_loader):
 if __name__ == '__main__':
 	
 	# generate the dataset, shuffle it
-	train_dataset = generate_uniform_circular_dataset(n_samples=n_samples, radius=5.5, low=-10.0, high=10.1, plot_db=True)
-	test_dataset  = generate_uniform_circular_dataset(n_samples=n_samples, radius=5.5, low=-10.0, high=10.1, plot_db=True)
+	train_dataset = generate_uniform_parabloic_dataset(n_samples=n_samples, low=-2.0, high=2.1, plot_db=True)
+	test_dataset  = generate_uniform_parabloic_dataset(n_samples=n_samples, low=-10.0, high=10.1, plot_db=True)
 
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 	test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)

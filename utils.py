@@ -101,8 +101,8 @@ def generate_uniform_parabloic_dataset(n_samples=10, low=-1.0, high=1.1, plot_db
 	points = np.array([list(x) for x in zip(x_samples, y_samples)])
 
 	#linear function y=a(x^2) + c
-	a = .45
-	c = 9.7
+	a = 5
+	c = 2
 
 	f = lambda x:  (a*(x**2)) - c
 	
