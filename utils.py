@@ -9,6 +9,7 @@ from sklearn.datasets.samples_generator import make_blobs
 from sklearn.cluster import KMeans
 from random import shuffle
 import numpy as np
+import math
 
 class Net4(nn.Module):
 	def __init__(self):
@@ -92,6 +93,113 @@ def generate_uniform_linear_dataset(n_samples=10, low=-1.0, high=1.1, plot_db=Fa
 
 	return resulting_labeled_points
 
+# generate a uniform parabolic dataset
+def generate_uniform_parabloic_dataset(n_samples=10, low=-1.0, high=1.1, plot_db=False):
+	# create N samples, uniformly distributed between low and high
+	x_samples    = uniform(low=low, high=high, size=(n_samples,))
+	y_samples    = uniform(low=low, high=high, size=(n_samples,))
+	points = np.array([list(x) for x in zip(x_samples, y_samples)])
+
+	#linear function y=a(x^2) + c
+	a = .45
+	c = 9.7
+
+	f = lambda x:  (a*(x**2)) - c
+	
+	# The labels for the clusters (positive integers)
+	cluster1_label = 0
+	cluster2_label = 1
+
+	cluster1_labeled_points = []
+	cluster2_labeled_points = []
+	
+	cluster1_x = []
+	cluster1_y = []
+	
+	cluster2_x = []
+	cluster2_y = []
+
+	for point in points:
+		x, y = point
+		diff = f(x) - y
+
+		if diff > 0:
+			point_tensor_cluster1 = (torch.from_numpy(point).float(), cluster1_label)
+			cluster1_labeled_points.append(point_tensor_cluster1)
+			cluster1_x.append(x)
+			cluster1_y.append(y)
+		else:
+			point_tensor_cluster2 = (torch.from_numpy(point).float(), cluster2_label)
+			cluster2_labeled_points.append(point_tensor_cluster2)
+			cluster2_x.append(x)
+			cluster2_y.append(y)
+
+	resulting_labeled_points = cluster1_labeled_points + cluster2_labeled_points
+
+	shuffle(resulting_labeled_points)
+	
+	if plot_db:
+		plt.scatter(cluster1_x, cluster1_y, c='blue')
+		plt.scatter(cluster2_x, cluster2_y, c='red')
+		plt.title('Parabolic Linear Dataset')
+		plt.show()
+
+	return resulting_labeled_points
+
+# generate a uniform circular dataset
+def generate_uniform_circular_dataset(n_samples=10, radius=2, low=-1.0, high=1.1, plot_db=False):
+	# create N samples, uniformly distributed between low and high
+	x_samples    = uniform(low=low, high=high, size=(n_samples,))
+	y_samples    = uniform(low=low, high=high, size=(n_samples,))
+	points = np.array([list(x) for x in zip(x_samples, y_samples)])
+
+	#circule function x^2+y^2
+	diameter = radius*radius
+	f_positive = lambda x: math.sqrt(diameter - (x**2))
+	f_negative = lambda x: -math.sqrt(diameter - (x**2))
+	
+	# The labels for the clusters (positive integers)
+	cluster1_label = 0
+	cluster2_label = 1
+
+	cluster1_labeled_points = []
+	cluster2_labeled_points = []
+	
+	cluster1_x = []
+	cluster1_y = []
+	
+	cluster2_x = []
+	cluster2_y = []
+
+	for point in points:
+		x, y = point
+
+
+		diff = lambda x : f_positive(x) - y if y > 0 else y - f_negative(x)
+
+		if abs(x) <= radius and diff(x) > 0:
+			point_tensor_cluster1 = (torch.from_numpy(point).float(), cluster1_label)
+			cluster1_labeled_points.append(point_tensor_cluster1)
+			cluster1_x.append(x)
+			cluster1_y.append(y)
+		else:
+			point_tensor_cluster2 = (torch.from_numpy(point).float(), cluster2_label)
+			cluster2_labeled_points.append(point_tensor_cluster2)
+			cluster2_x.append(x)
+			cluster2_y.append(y)
+
+	resulting_labeled_points = cluster1_labeled_points + cluster2_labeled_points
+
+	shuffle(resulting_labeled_points)
+	
+	if plot_db:
+		plt.scatter(cluster1_x, cluster1_y, c='blue')
+		plt.scatter(cluster2_x, cluster2_y, c='red')
+		plt.title('Circular Linear Dataset')
+		plt.show()
+
+	return resulting_labeled_points
+
 # generate a linear dataset for sampling with two centers (using numpy's uniform() )
 # and return as a DataLoader
 def generate_sample_linear_dataset(n_samples=1000, centers=2, low=-1.0, high=1.1):
@@ -125,7 +233,7 @@ def plot_boundry(NN, N=1000, low=-2, high=2, sample_loader=None):
 
 		sample_loader = torch.utils.data.DataLoader(samples)
 
-	# feed it to the neural net
+	# feed it to the neural net, and decide the points classes
 	labels = []
 	for x in sample_loader:
 		y = NN(x)
@@ -138,7 +246,7 @@ def plot_boundry(NN, N=1000, low=-2, high=2, sample_loader=None):
 	colors = {0:'red', 1:'blue'}
 	fig, ax = plt.subplots()
 	grouped = df.groupby('label')
-	ax.set_title('Net{} - decision boundry'.format(str(NN.id)))
+	ax.set_title('Net{} - decision boundary'.format(str(NN.id)))
 
 	for key, group in grouped:
 	    group.plot(ax=ax, kind='scatter', x='x', y='y', label=key, color=colors[key])

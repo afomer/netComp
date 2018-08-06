@@ -7,12 +7,13 @@ import torch.utils.data
 import torch.nn.functional as F
 from random import shuffle
 from utils import plot_boundry, generate_linear_dataset, \
-generate_sample_linear_dataset, generate_uniform_linear_dataset, plot_loss
+generate_sample_linear_dataset, generate_uniform_linear_dataset, \
+plot_loss, generate_uniform_circular_dataset, generate_uniform_parabloic_dataset
 from numpy.random import uniform
 
 learning_rate = 0.005
 epochs = 15
-n_samples = 1000
+n_samples = 10000
 batch_size = 64
 
 SHOW_TRAIN_LOGS = False
@@ -225,19 +226,14 @@ def main(net, train_loader, test_loader, sample_loader):
 
 	print('Train Accuracy: {} \nTest Accuracy: {}'.format(training_accuracy, test_accuracy))
 	plot_loss(net, training_loss_array, 'training', test_loss_array, 'test')
-	plot_boundry(net, sample_loader=sample_loader)
+	plot_boundry(net, N=n_samples, sample_loader=sample_loader, low=-10, high=10.1)
 
 
 if __name__ == '__main__':
 	
 	# generate the dataset, shuffle it
-	dataset_data = generate_uniform_linear_dataset(n_samples=n_samples, plot_db=False)
-
-	train_test_divide = int(len(dataset_data) * .8)
-
-	# partition into train and test sets
-	train_dataset = dataset_data[:train_test_divide]
-	test_dataset  = dataset_data[train_test_divide:]
+	train_dataset = generate_uniform_circular_dataset(n_samples=n_samples, radius=5.5, low=-10.0, high=10.1, plot_db=True)
+	test_dataset  = generate_uniform_circular_dataset(n_samples=n_samples, radius=5.5, low=-10.0, high=10.1, plot_db=True)
 
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 	test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
