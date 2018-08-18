@@ -8,16 +8,37 @@ import torch.nn.functional as F
 from random import shuffle
 from utils import plot_boundry, generate_linear_dataset, \
 generate_sample_linear_dataset, generate_uniform_linear_dataset, \
-plot_loss, generate_uniform_circular_dataset, generate_uniform_parabloic_dataset
+plot_loss, generate_uniform_circular_dataset, generate_uniform_parabolic_dataset, \
+generate_uniform_stripes_dataset
 from numpy.random import uniform
 
-learning_rate = 0.005
-epochs = 15
-n_samples = 10000
-batch_size = 64
+#0.005 is current best
+learning_rate = 0.003
+epochs = 100
+n_samples = 20000
+batch_size = 256
 
 SHOW_TRAIN_LOGS = False
 SHOW_TEST_LOGS  = False
+
+class Net5(nn.Module):
+	def __init__(self):
+		super(Net5, self).__init__()
+		self.id  = 5
+		self.fc1 = nn.Linear(2, 11)
+		self.fc2 = nn.Linear(11, 11)
+		self.fc3 = nn.Linear(11, 11)
+		self.fc4 = nn.Linear(11, 11)
+		self.fc5 = nn.Linear(11, 2)
+
+	def forward(self, x):
+		x = F.elu(self.fc1(x))
+		x = (self.fc2(x))
+		x = (self.fc3(x))
+		x = (self.fc4(x))
+		x = self.fc5(x)
+		return F.log_softmax(x, dim=1)
+
 
 class Net4(nn.Module):
 	def __init__(self):
@@ -28,8 +49,8 @@ class Net4(nn.Module):
 		self.fc3 = nn.Linear(30, 2)
 
 	def forward(self, x):
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
+		x = F.elu(self.fc1(x))
+		x = F.elu(self.fc2(x))
 		x = self.fc3(x)
 		return F.log_softmax(x, dim=1)
 
@@ -43,9 +64,9 @@ class Net3(nn.Module):
 		self.fc4 = nn.Linear(20, 2)
 
 	def forward(self, x):
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = F.relu(self.fc3(x))
+		x = F.elu(self.fc1(x))
+		x = F.elu(self.fc2(x))
+		x = F.elu(self.fc3(x))
 		x = self.fc4(x)
 		return F.log_softmax(x, dim=1)
 
@@ -61,11 +82,11 @@ class Net2(nn.Module):
 		self.fc6 = nn.Linear(15, 2)
 
 	def forward(self, x):
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = F.relu(self.fc3(x))
-		x = F.relu(self.fc4(x))
-		x = F.relu(self.fc5(x))
+		x = F.elu(self.fc1(x))
+		x = F.elu(self.fc2(x))
+		x = F.elu(self.fc3(x))
+		x = F.elu(self.fc4(x))
+		x = F.elu(self.fc5(x))
 		x = self.fc6(x)
 		return F.log_softmax(x, dim=1)
 
@@ -86,16 +107,16 @@ class Net1(nn.Module):
 		self.fc11 = nn.Linear(10, 2)
 
 	def forward(self, x):
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = F.relu(self.fc3(x))
-		x = F.relu(self.fc4(x))
-		x = F.relu(self.fc5(x))
-		x = F.relu(self.fc6(x))
-		x = F.relu(self.fc7(x))
-		x = F.relu(self.fc8(x))
-		x = F.relu(self.fc9(x))
-		x = F.relu(self.fc10(x))
+		x = F.elu(self.fc1(x))
+		x = F.elu(self.fc2(x))
+		x = F.elu(self.fc3(x))
+		x = F.elu(self.fc4(x))
+		x = F.elu(self.fc5(x))
+		x = F.elu(self.fc6(x))
+		x = F.elu(self.fc7(x))
+		x = F.elu(self.fc8(x))
+		x = F.elu(self.fc9(x))
+		x = F.elu(self.fc10(x))
 		x = self.fc11(x)
 		return F.log_softmax(x, dim=1)
 
@@ -103,27 +124,27 @@ class Net0(nn.Module):
 	def __init__(self):
 		super(Net0, self).__init__()
 		self.id  = 0
-		self.fc1 = nn.Linear(2, 7)
-		self.fc2 = nn.Linear(7, 7)
-		self.fc3 = nn.Linear(7, 7)
-		self.fc4 = nn.Linear(7, 7)
-		self.fc5 = nn.Linear(7, 7)
-		self.fc6 = nn.Linear(7, 7)
-		self.fc7 = nn.Linear(7, 7)
-		self.fc8 = nn.Linear(7, 7)
-		self.fc9 = nn.Linear(7, 7)
-		self.fc10 = nn.Linear(7, 7)
-		self.fc11 = nn.Linear(7, 7)
-		self.fc12 = nn.Linear(7, 7)
-		self.fc13 = nn.Linear(7, 7)
-		self.fc14 = nn.Linear(7, 7)
-		self.fc15 = nn.Linear(7, 7)
-		self.fc16 = nn.Linear(7, 7)
-		self.fc17 = nn.Linear(7, 7)
-		self.fc18 = nn.Linear(7, 7)
-		self.fc19 = nn.Linear(7, 7)
-		self.fc20 = nn.Linear(7, 7)
-		self.fc21 = nn.Linear(7, 2)
+		self.fc1 = nn.Linear(2, 9)
+		self.fc2 = nn.Linear(9, 9)
+		self.fc3 = nn.Linear(9, 9)
+		self.fc4 = nn.Linear(9, 9)
+		self.fc5 = nn.Linear(9, 9)
+		self.fc6 = nn.Linear(9, 9)
+		self.fc7 = nn.Linear(9, 9)
+		self.fc8 = nn.Linear(9, 9)
+		self.fc9 = nn.Linear(9, 9)
+		self.fc10 = nn.Linear(9, 9)
+		self.fc11 = nn.Linear(9, 9)
+		self.fc12 = nn.Linear(9, 9)
+		self.fc13 = nn.Linear(9, 9)
+		self.fc14 = nn.Linear(9, 9)
+		self.fc15 = nn.Linear(9, 9)
+		self.fc16 = nn.Linear(9, 9)
+		self.fc17 = nn.Linear(9, 9)
+		self.fc18 = nn.Linear(9, 9)
+		self.fc19 = nn.Linear(9, 9)
+		self.fc20 = nn.Linear(9, 9)
+		self.fc21 = nn.Linear(9, 2)
 
 	def forward(self, x):
 		x = F.elu(self.fc1(x))
@@ -225,25 +246,27 @@ def main(net, train_loader, test_loader, sample_loader):
 		test_loss_array.append( test_loss )
 
 	print('Train Accuracy: {} \nTest Accuracy: {}'.format(training_accuracy, test_accuracy))
-	plot_loss(net, training_loss_array, 'training', test_loss_array, 'test')
-	plot_boundry(net, N=n_samples, sample_loader=sample_loader, low=-10, high=10.1)
+	plot_loss(net, training_loss_array, 'training', test_loss_array, 'validation')
+	plot_boundry(net, N=n_samples, sample_loader=sample_loader,low=-10, high=10.1)
 
 
 if __name__ == '__main__':
 	
 	# generate the dataset, shuffle it
-	train_dataset = generate_uniform_parabloic_dataset(n_samples=n_samples, low=-2.0, high=2.1, plot_db=True)
-	test_dataset  = generate_uniform_parabloic_dataset(n_samples=n_samples, low=-10.0, high=10.1, plot_db=True)
+	train_dataset = generate_uniform_stripes_dataset(n_samples=n_samples, low=-3.0, high=3.1, slope=.1, plot_db=True)
+	validation_dataset  = generate_uniform_stripes_dataset(n_samples=n_samples, low=-3.0, high=3.1, slope=.1, plot_db=True)
 
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-	test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+	validation_loader  = torch.utils.data.DataLoader(validation_dataset, batch_size=batch_size, shuffle=True)
 
 	# run all 5 models
-	models_num = 5
-	models = [Net0(), Net1(), Net2(), Net3(), Net4()]
+	models = [Net0(), Net1(), Net2(), Net3(), Net4(), Net5()]
+	models_num = len(models)
 	
-	for model_idx in range(len(models)):
-		print('\n___Net{}___\n'.format(model_idx))
-		main(models[model_idx], train_loader, test_loader, generate_sample_linear_dataset())
-		print('\n___________')
+	for model_idx in range(models_num):
+		repeat_times = 1
+		for i in range(1, repeat_times + 1):
+			print('\n___Net{}___{}/{}\n'.format(model_idx, i, repeat_times))
+			main(models[model_idx], train_loader, validation_loader, generate_sample_linear_dataset())
+			print('\n___________')
 

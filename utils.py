@@ -10,6 +10,7 @@ from sklearn.cluster import KMeans
 from random import shuffle
 import numpy as np
 import math
+import os
 
 class Net4(nn.Module):
 	def __init__(self):
@@ -94,13 +95,13 @@ def generate_uniform_linear_dataset(n_samples=10, low=-1.0, high=1.1, plot_db=Fa
 	return resulting_labeled_points
 
 # generate a uniform parabolic dataset
-def generate_uniform_parabloic_dataset(n_samples=10, low=-1.0, high=1.1, plot_db=False):
+def generate_uniform_parabolic_dataset(n_samples=10, low=-1.0, high=1.1, plot_db=False):
 	# create N samples, uniformly distributed between low and high
 	x_samples    = uniform(low=low, high=high, size=(n_samples,))
 	y_samples    = uniform(low=low, high=high, size=(n_samples,))
 	points = np.array([list(x) for x in zip(x_samples, y_samples)])
 
-	#linear function y=a(x^2) + c
+	# function f(x)=a(x*x) + c
 	a = 5
 	c = 2
 
@@ -141,7 +142,82 @@ def generate_uniform_parabloic_dataset(n_samples=10, low=-1.0, high=1.1, plot_db
 	if plot_db:
 		plt.scatter(cluster1_x, cluster1_y, c='blue')
 		plt.scatter(cluster2_x, cluster2_y, c='red')
-		plt.title('Parabolic Linear Dataset')
+		plt.title('Parabolic Uniform Dataset')
+		plt.show()
+
+	return resulting_labeled_points
+
+# generate a uniform stripes dataset
+def generate_uniform_stripes_dataset(n_samples=10, low=-1.0, high=1.1, slope=-.3,stride=1, plot_db=False):
+	# create N samples, uniformly distributed between low and high
+	x_samples    = uniform(low=low, high=high, size=(n_samples,))
+	y_samples    = uniform(low=low, high=high, size=(n_samples,))
+	points = np.array([list(x) for x in zip(x_samples, y_samples)])
+
+	functions = []
+	functions_num = int(abs(high-low)+4)
+	a = slope
+	c = 0
+	stride = .5
+	
+
+	for i in range(functions_num):
+		# To prevent late binding, initialize c with the current c 
+		# in the loop. i.e c=c
+		fn_above = lambda x, c=c : a * x - c
+		fn_below = lambda x, c=c : a * x + c
+		
+		functions.append((fn_above, 0 if i % 2 == 0 else 1  ))
+		functions.append((fn_below, 0 if i % 2 == 0 else 1  ))
+		
+		c += stride
+	
+	# The labels for the clusters (positive integers)
+	cluster1_label = 0
+	cluster2_label = 1
+
+	cluster1_labeled_points = []
+	cluster2_labeled_points = []
+	
+	cluster1_x = []
+	cluster1_y = []
+	
+	cluster2_x = []
+	cluster2_y = []
+
+	for point in points:
+		x, y = point
+		
+		# input x to all functions in the 'functions' list, get the absolute difference
+		# then get the functions that's closest to the point using min()
+		temp = []
+		for entry in functions:
+			fn = entry[0]
+			label = entry[1]
+			temp.append( (abs(y - fn(x)), label) )
+		
+		diff = (0, 0) if len(temp) < 1 else min(temp)
+		closest = diff[1]
+
+		if closest == 0:
+			point_tensor_cluster1 = (torch.from_numpy(point).float(), cluster1_label)
+			cluster1_labeled_points.append(point_tensor_cluster1)
+			cluster1_x.append(x)
+			cluster1_y.append(y)
+		else:
+			point_tensor_cluster2 = (torch.from_numpy(point).float(), cluster2_label)
+			cluster2_labeled_points.append(point_tensor_cluster2)
+			cluster2_x.append(x)
+			cluster2_y.append(y)
+
+	resulting_labeled_points = cluster1_labeled_points + cluster2_labeled_points
+
+	shuffle(resulting_labeled_points)
+	
+	if plot_db:
+		plt.scatter(cluster1_x, cluster1_y, c='blue')
+		plt.scatter(cluster2_x, cluster2_y, c='red')
+		plt.title('Stripes Uniform Dataset')
 		plt.show()
 
 	return resulting_labeled_points
@@ -221,22 +297,36 @@ def generate_sample_linear_dataset(n_samples=1000, centers=2, low=-1.0, high=1.1
 # on them, then color samples them based on NN's classification
 def plot_boundry(NN, N=1000, low=-2, high=2, sample_loader=None):
 
+	'''
 	if sample_loader is not None:
 		# create N samples, uniformly distributed between low and high
 		x_samples    = uniform(low=low, high=high, size=(N,))
 		y_samples    = uniform(low=low, high=high, size=(N,))
-		
-		x_tensors = torch.from_numpy(x_samples).float()
-		y_tensors = torch.from_numpy(y_samples).float()
 
-		samples = torch.Tensor([ x for x in zip(x_tensors, y_tensors) ])
+	'''
+	
+	samples = generate_uniform_stripes_dataset(n_samples=N, low=low, high=high, plot_db=False)
 
-		sample_loader = torch.utils.data.DataLoader(samples)
+	x_samples    = [ float(x) for x in map(lambda e:e[0][0], samples)]
+	y_samples    = [ float(y) for y in map(lambda e:e[0][1], samples)]
+
+	dataset = []
+
+	for sample in samples:
+		label = sample[1]
+
+		new_sample = [[ [sample[0][0].item(), sample[0][1].item()] ]]
+		padded_sample = F.pad(torch.Tensor(new_sample), (0, 23, 24, 0), 'constant', 0)
+
+		modified_sample = (padded_sample, label)
+		dataset.append(modified_sample)
+
+	sample_loader = torch.utils.data.DataLoader(dataset)
 
 	# feed it to the neural net, and decide the points classes
 	labels = []
 	for x in sample_loader:
-		y = NN(x)
+		y = NN(x[0])
 		class_1, class_2 = y[0][0], y[0][1]
 		label = 1 if  class_1 > class_2 else 0
 		labels.append(label)
@@ -246,10 +336,11 @@ def plot_boundry(NN, N=1000, low=-2, high=2, sample_loader=None):
 	colors = {0:'red', 1:'blue'}
 	fig, ax = plt.subplots()
 	grouped = df.groupby('label')
-	ax.set_title('Net{} - decision boundary'.format(str(NN.id)))
+	ax.set_title('Net{} - decision boundary'.format(str(NN.id if NN.id else 0)))
 
 	for key, group in grouped:
 	    group.plot(ax=ax, kind='scatter', x='x', y='y', label=key, color=colors[key])
+	#plt.savefig(os.getcwd() + '/temp/Net{} - decision boundary_v5.png'.format(str(NN.id)))
 	plt.show()
 
 # Generate a plot of the loss
@@ -257,5 +348,6 @@ def plot_loss(NN, loss_array1, loss_type_str_1, loss_array2, loss_type_str_2):
 	plt.plot(range(1, len(loss_array1) + 1), loss_array1, label=loss_type_str_1)
 	plt.plot(range(1, len(loss_array2) + 1), loss_array2, label=loss_type_str_2)
 	plt.legend()
-	plt.title('Net{} - Loss'.format(str(NN.id)))
+	plt.title('Net{} - Loss'.format(str(NN.id if NN.id else 0)))
+	#plt.savefig(os.getcwd() + '/temp/Net{} - Loss.png'.format(str(NN.id)))
 	plt.show()
