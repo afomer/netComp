@@ -38,11 +38,15 @@ class BasicBlock(nn.Module):
 
     def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
+        print(stride != 1 or in_planes != self.expansion*planes)
+        self.linear1 = nn.Linear(25, 25, bias=False)
+        self.in_planes = in_planes
+        self.planes = planes
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
-
+        self.stride = stride
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
             self.shortcut = nn.Sequential(
@@ -51,6 +55,20 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
+        #print(self.conv1(x).size(), x.size())
+        linear1 = lambda x: F.relu(nn.Linear(x.size()[2], x.size()[3], bias=False)(x))
+        linear2 = lambda x: F.relu(nn.Linear(x.size()[2], x.size()[3], bias=False)(x))
+        bn1 = nn.BatchNorm2d(x.size()[1])
+        bn2 = nn.BatchNorm2d(x.size()[1])
+        shortcut = nn.Sequential()
+        
+        if self.stride != 1 or self.in_planes != self.expansion*self.planes:
+            shortcut = nn.Sequential(nn.Linear(x.size()[2], x.size()[3], bias=False),
+                nn.BatchNorm2d(self.expansion*self. planes))
+
+        #print(shortcut(x))
+        #print( F.relu( bn2(linear2( F.relu(bn1(linear1(x))) )) ).size(), shortcut(x).size() )
+        return (F.relu( F.relu( bn2(linear2( F.relu(bn1(linear1(x))) )) ) + shortcut(x) ))
         out = F.elu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out += self.shortcut(x)
@@ -78,11 +96,11 @@ class Bottleneck(nn.Module):
             )
 
     def forward(self, x):
-        out = F.elu(self.bn1(self.conv1(x)))
-        out = F.elu(self.bn2(self.conv2(out)))
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = F.relu(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
         out += self.shortcut(x)
-        out = F.elu(out)
+        out = F.relu(out)
         return out
 
 
@@ -109,11 +127,17 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        #linear1 = lambda x: F.relu(nn.Linear(x.size()[2], x.size()[3], bias=False)(x))
+        #linear2 = lambda x: F.relu(nn.Linear(x.size()[2], x.size()[3], bias=False)(x))
+        #bn1 = nn.BatchNorm2d(x.size()[1])
+        #bn2 = nn.BatchNorm2d(x.size()[1])
+
         out = F.elu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
+        print(out.size(), self.linear)
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
